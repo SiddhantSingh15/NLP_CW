@@ -5,6 +5,7 @@ import os
 import re
 import nltk
 
+
 nltk.download("stopwords")
 from nltk.corpus import stopwords
 
@@ -40,7 +41,7 @@ class PreProcessor:
             lambda x: re.sub(r"@\S+", "", x)
         )
 
-        self.downsample_train = None
+        self.augmented = None
 
         self.raw_dev = self.rebuild_dev(self.teids, self.data)
         self.dev_labels = np.array(self.raw_dev["label"])
@@ -94,7 +95,31 @@ class PreProcessor:
             [pcldf, self.raw_train[self.raw_train.label == 0][: npos * 2]]
         )
 
-        self.downsampled_train = downsampled_df
+        self.augmented = downsampled_df
+
+    def aug_and_rebal(self, aug):
+        all_data = [self.raw_train]
+        n = (
+            int(
+                len(self.raw_train[self.raw_train["label"] == 0])
+                / len(self.raw_train[self.raw_train["label"] == 1])
+            )
+            if len(self.raw_train[self.raw_train["label"] == 1]) != 0
+            else 0
+        )
+        n = n // 2  # otherwise we rebalance too much
+        print(f"Data augmentation: rebalancing {n} times...")
+        for i in range(n):
+            print(f"    Iteration {i}")
+            df_new = self.raw_train[self.raw_train["label"] == 1].copy(
+                deep=True
+            )
+            texts = df_new["text"].tolist()
+            augmented_text = [aug.augment(text)[0] for text in texts]
+            df_new["text"] = augmented_text
+            all_data.append(df_new)
+            
+        return pd.concat(all_data, axis=0)
 
     def run_preprocess(
         self,
@@ -103,7 +128,7 @@ class PreProcessor:
         dig_func=None,
         stop_word_func=None,
     ):
-        proc_train = self.downsampled_train
+        proc_train = self.augmented
         if white_func is not None:
             proc_train["text"] = proc_train["text"].apply(
                 lambda x: white_func(x)
