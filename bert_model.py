@@ -4,7 +4,7 @@ from transformers import (
     RobertaForSequenceClassification,
     TrainingArguments,
     Trainer,
-    DataCollatorWithPadding,
+    DataCollatorWithPadding
 )
 from sklearn.metrics import (
     accuracy_score,
@@ -79,7 +79,16 @@ class Model:
 
         self.trainer.train()
 
-    def evaluate(self):
+    def evaluate_on_df(self, inputs):
+        preds = self.inference(inputs)
+        return self.compute_metrics(preds)
+    
+    def evaluate_train(self, train_df):
+        input_hf = Dataset.from_pandas(train_df)
+        tokenized_input = input_hf.map(self.apply_tokenizer, batched=True)
+        return self.trainer.evaluate(tokenized_input)
+
+    def evaluate_dev(self):
         return self.trainer.evaluate()
 
     def compute_metrics(self, pred):
