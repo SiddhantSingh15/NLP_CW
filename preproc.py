@@ -9,7 +9,7 @@ import nltk
 nltk.download("stopwords")
 from nltk.corpus import stopwords
 
-os.chdir("/vol/bitbucket/ss5120/NLP_CW")
+os.chdir("/vol/bitbucket/tg1120/NLP_CW")
 
 
 class PreProcessor:
