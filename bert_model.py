@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 from transformers import (
     RobertaTokenizer,
@@ -19,7 +18,7 @@ wandb.init(mode="disabled")
 
 
 class Model(nn.Module):
-    def __init__(self, model_type, layers_to_freeze = 9, num_train_epochs=2):
+    def __init__(self, model_type, layers_to_freeze = 0, num_train_epochs=1):
         super(Model, self).__init__()
 
         self.training_args = TrainingArguments(
