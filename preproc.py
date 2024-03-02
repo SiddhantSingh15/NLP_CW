@@ -128,7 +128,7 @@ class PreProcessor:
         dig_func=None,
         stop_word_func=None,
     ):
-        proc_train = self.augmented
+        proc_train = self.augmented.copy(deep=True)
         if white_func is not None:
             proc_train["text"] = proc_train["text"].apply(
                 lambda x: white_func(x)
