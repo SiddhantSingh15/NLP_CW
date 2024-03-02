@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from transformers import (
     RobertaTokenizer,
     RobertaForSequenceClassification,
@@ -6,6 +7,7 @@ from transformers import (
     Trainer,
     DataCollatorWithPadding
 )
+from transformers.modeling_outputs import TokenClassifierOutput
 from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
@@ -16,15 +18,14 @@ import wandb
 wandb.init(mode="disabled")
 
 
-class Model:
-    def __init__(self, model_type):
-        self.cuda_available = torch.cuda.is_available()
-        self.device = "cuda" if self.cuda_available else "cpu"
-        print(f"Device: {self.device}")
+class Model(nn.Module):
+    def __init__(self, model_type, layers_to_freeze = 9, num_train_epochs=2):
+        super(Model, self).__init__()
+
         self.training_args = TrainingArguments(
             report_to="none",
             output_dir="./results",
-            num_train_epochs=1,
+            num_train_epochs=num_train_epochs,
             per_device_train_batch_size=16,
             per_device_eval_batch_size=64,
             warmup_steps=500,
@@ -47,7 +48,38 @@ class Model:
                 id2label=self.id2label,
                 label2id=self.label2id,
             )
-            self.model.to(self.device)
+
+        for param in self.model.base_model.parameters():
+            if layers_to_freeze > 0:
+                param.requires_grad = False
+                layers_to_freeze -= 1
+
+        self.classifier = nn.Linear(768, 2)
+        self.activation_function = nn.Sigmoid()
+
+        self.loss_function = nn.BCELoss()
+
+    def forward(self, input_ids=None, attention_mask=None, labels=None):
+        outputs = self.model(
+            input_ids=input_ids, attention_mask=attention_mask
+        )
+
+        last_hidden_state = outputs.last_hidden_state
+
+        cls_output = last_hidden_state[:, 0, :]
+
+        cls_output = self.classifier(cls_output)
+
+        cls_output = self.activation_function(cls_output)
+        cls_output = cls_output.view(-1, 2).float()
+
+        loss = None
+
+        if labels is not None:
+            loss = self.loss_function(cls_output, labels)
+
+        return TokenClassifierOutput(loss=loss, logits=cls_output)
+
 
     def apply_tokenizer(self, batch):
         return self.tokenizer(
