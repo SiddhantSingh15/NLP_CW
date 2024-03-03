@@ -4,7 +4,7 @@ from transformers import (
     RobertaForSequenceClassification,
     TrainingArguments,
     Trainer,
-    DataCollatorWithPadding
+    DataCollatorWithPadding,
 )
 from transformers.modeling_outputs import TokenClassifierOutput
 from sklearn.metrics import (
@@ -18,7 +18,7 @@ wandb.init(mode="disabled")
 
 
 class Model(nn.Module):
-    def __init__(self, model_type, layers_to_freeze = 0, num_train_epochs=1):
+    def __init__(self, model_type, layers_to_freeze=0, num_train_epochs=1):
         super(Model, self).__init__()
 
         self.training_args = TrainingArguments(
@@ -38,9 +38,7 @@ class Model(nn.Module):
         self.trainer = None
 
         if model_type == "baseline":
-            self.tokenizer = RobertaTokenizer.from_pretrained(
-                "roberta-base"
-            )
+            self.tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
             self.model = RobertaForSequenceClassification.from_pretrained(
                 "roberta-base",
                 num_labels=2,
@@ -59,9 +57,7 @@ class Model(nn.Module):
         self.loss_function = nn.BCELoss()
 
     def forward(self, input_ids=None, attention_mask=None, labels=None):
-        outputs = self.model(
-            input_ids=input_ids, attention_mask=attention_mask
-        )
+        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
 
         last_hidden_state = outputs.last_hidden_state
 
@@ -78,7 +74,6 @@ class Model(nn.Module):
             loss = self.loss_function(cls_output, labels)
 
         return TokenClassifierOutput(loss=loss, logits=cls_output)
-
 
     def apply_tokenizer(self, batch):
         return self.tokenizer(
@@ -110,10 +105,12 @@ class Model(nn.Module):
 
         self.trainer.train()
 
-    def evaluate_on_df(self, inputs):
-        preds = self.inference(inputs)
-        return self.compute_metrics(preds)
-    
+    def inference(self, df):
+        input_hf = Dataset.from_pandas(df)
+        tokenized_input = input_hf.map(self.apply_tokenizer, batched=True)
+        predictions = self.trainer.predict(tokenized_input)
+        return predictions.predictions
+
     def evaluate_train(self, train_df):
         input_hf = Dataset.from_pandas(train_df)
         tokenized_input = input_hf.map(self.apply_tokenizer, batched=True)
