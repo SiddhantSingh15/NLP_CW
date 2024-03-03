@@ -1,5 +1,6 @@
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
-
+import torch
+import gc
 
 class EnsembleModel:
     def __init__(self, dev_dataset):
@@ -14,6 +15,8 @@ class EnsembleModel:
     def train(self):
         for model, train_set in zip(self.model_list, self.train_set_list):
             model.train(train_set, self.dev_dataset)
+            torch.cuda.empty_cache()
+            gc.collect()
 
     def majority_vote(self, test_data):
         preds = [model.inference(test_data) for model in self.model_list]
