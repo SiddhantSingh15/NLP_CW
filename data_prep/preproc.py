@@ -1,7 +1,6 @@
 import pandas as pd
-from dont_patronize_me import DontPatronizeMe
+from data_prep.dont_patronize_me import DontPatronizeMe
 import numpy as np
-import os
 import re
 import nltk
 
@@ -9,7 +8,6 @@ import nltk
 nltk.download("stopwords")
 from nltk.corpus import stopwords
 
-os.chdir("/vol/bitbucket/tg1120/NLP_CW")
 
 
 class PreProcessor:
