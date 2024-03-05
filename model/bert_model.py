@@ -6,7 +6,6 @@ from transformers import (
     Trainer,
     DataCollatorWithPadding,
 )
-from transformers.modeling_outputs import TokenClassifierOutput
 from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
@@ -50,30 +49,6 @@ class Model(nn.Module):
             if layers_to_freeze > 0:
                 param.requires_grad = False
                 layers_to_freeze -= 1
-
-        self.classifier = nn.Linear(768, 2)
-        self.activation_function = nn.Sigmoid()
-
-        self.loss_function = nn.BCELoss()
-
-    def forward(self, input_ids=None, attention_mask=None, labels=None):
-        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-
-        last_hidden_state = outputs.last_hidden_state
-
-        cls_output = last_hidden_state[:, 0, :]
-
-        cls_output = self.classifier(cls_output)
-
-        cls_output = self.activation_function(cls_output)
-        cls_output = cls_output.view(-1, 2).float()
-
-        loss = None
-
-        if labels is not None:
-            loss = self.loss_function(cls_output, labels)
-
-        return TokenClassifierOutput(loss=loss, logits=cls_output)
 
     def apply_tokenizer(self, batch):
         return self.tokenizer(
