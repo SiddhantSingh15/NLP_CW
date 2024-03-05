@@ -24,7 +24,7 @@ class PreProcessor:
         self.trids.par_id = self.trids.par_id.astype(str)
         self.teids.par_id = self.teids.par_id.astype(str)
 
-        self.dpm = DontPatronizeMe(".", ".")
+        self.dpm = DontPatronizeMe("data", "data")
         self.dpm.load_task1()
 
         self.data = self.dpm.train_task1_df
